@@ -1,58 +1,48 @@
 package main
 
 import (
-    "net/http"
-    "net/http/httptest"
-    "strconv"
-    "strings"
-    "testing"
+	"net/http"
+	"strconv"
+	"strings"
 )
 
+// Список кафе по городу Москва
 var cafeList = map[string][]string{
-    "moscow": []string{"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"},
+	"moscow": []string{"Мир кофе", "Сладкоежка", "Кофе и завтраки", "Сытый студент"},
 }
 
 func mainHandle(w http.ResponseWriter, req *http.Request) {
-    countStr := req.URL.Query().Get("count")
-    if countStr == "" {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("count missing"))
-        return
-    }
+	countStr := req.URL.Query().Get("count") // Извлекаем параметр 'count' из GET-запроса
+	if countStr == "" {                      // Если параметр 'count' не предоставлен, отправляем ошибку клиенту
+		w.WriteHeader(http.StatusBadRequest) // Устанавливаем HTTP статус-код 400
+		w.Write([]byte("count missing"))     // Отправляем сообщение об ошибке в теле ответа
+		return                               // Прекращаем дальнейшую обработку функции
+	}
 
-    count, err := strconv.Atoi(countStr)
-    if err != nil {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("wrong count value"))
-        return
-    }
+	count, err := strconv.Atoi(countStr) // Преобразуем 'count' из строки в целое число
+	if err != nil {                      // Если 'count' не может быть преобразован, сообщаем об ошибке
+		w.WriteHeader(http.StatusBadRequest) // Устанавливаем HTTP статус-код 400
+		w.Write([]byte("wrong count value")) // Отправляем сообщение об ошибке в теле ответа
+		return                               // Прекращаем дальнейшую обработку функции
+	}
 
-    city := req.URL.Query().Get("city")
+	city := req.URL.Query().Get("city") // Извлекаем параметр 'city' из запроса
 
-    cafe, ok := cafeList[city]
-    if !ok {
-        w.WriteHeader(http.StatusBadRequest)
-        w.Write([]byte("wrong city value"))
-        return
-    }
+	cafe, ok := cafeList[city] // Пытаемся получить список кафе для данного города
+	if !ok {                   // Если город не найден в списке, сообщаем об ошибке
+		w.WriteHeader(http.StatusBadRequest) // Устанавливаем HTTP статус-код 400
+		w.Write([]byte("wrong city value"))  // Отправляем сообщение об ошибке в теле ответа
+		return                               // Прекращаем дальнейшую обработку функции
+	}
 
-    if count > len(cafe) {
-        count = len(cafe)
-    }
+	if count > len(cafe) { // Если запрашиваемое количество кафе больше, чем доступно, корректируем это количество
+		count = len(cafe) // Присваиваем 'count' количество доступных кафе, чтобы вернуть их все
+	}
 
-    answer := strings.Join(cafe[:count], ",")
+	answer := strings.Join(cafe[:count], ",") // Объединяем имена кафе в строку, разделяя их запятой
 
-    w.WriteHeader(http.StatusOK)
-    w.Write([]byte(answer))
+	w.WriteHeader(http.StatusOK) // Устанавливаем HTTP статус-код 200, так как все обработано корректно
+	w.Write([]byte(answer))      // Отправляем ответ с перечнем кафе
 }
 
-func TestMainHandlerWhenCountMoreThanTotal(t *testing.T) {
-    totalCount := 4
-    req := ... // здесь нужно создать запрос к сервису
-
-    responseRecorder := httptest.NewRecorder()
-    handler := http.HandlerFunc(mainHandle)
-    handler.ServeHTTP(responseRecorder, req)
-
-    // здесь нужно добавить необходимые проверки
-}
+// Тесты перенес в отдельный файл main_test.go
